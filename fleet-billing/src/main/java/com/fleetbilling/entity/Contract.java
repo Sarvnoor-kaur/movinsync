@@ -65,6 +65,19 @@ public class Contract {
     private String contractNumber;
 
     /**
+     * Descriptive name of the contract. Example: "ABC Fleet Monthly Contract"
+     */
+    @Column(length = 255)
+    private String name;
+
+    /**
+     * Primary billing model for this contract.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_type", length = 20)
+    private com.fleetbilling.enums.BillingType billingType;
+
+    /**
      * The vendor providing the vehicle(s) under this contract.
      */
     @NotNull
@@ -74,13 +87,10 @@ public class Contract {
     private Vendor vendor;
 
     /**
-     * The specific vehicle covered by this contract.
-     * One contract covers exactly one vehicle.
-     * A vehicle can have multiple contracts over time (not simultaneously active).
+     * The specific vehicle covered by this contract (optional).
      */
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "vehicle_id", nullable = false,
+    @JoinColumn(name = "vehicle_id", nullable = true,
                 foreignKey = @ForeignKey(name = "fk_contract_vehicle"))
     private Vehicle vehicle;
 
