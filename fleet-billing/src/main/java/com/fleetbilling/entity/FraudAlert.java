@@ -1,11 +1,13 @@
 package com.fleetbilling.entity;
 
+import com.fleetbilling.enums.FraudAlertStatus;
 import com.fleetbilling.enums.FraudAlertType;
 import com.fleetbilling.enums.FraudSeverity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -42,10 +44,12 @@ import java.time.LocalDateTime;
 @Table(
         name = "fraud_alerts",
         indexes = {
-                @Index(name = "idx_fraud_trip",        columnList = "trip_id"),
-                @Index(name = "idx_fraud_billing_run", columnList = "billing_run_id"),
-                @Index(name = "idx_fraud_resolved",    columnList = "resolved"),
-                @Index(name = "idx_fraud_severity",    columnList = "severity")
+                @Index(name = "idx_fraud_trip",           columnList = "trip_id"),
+                @Index(name = "idx_fraud_billing_run",    columnList = "billing_run_id"),
+                @Index(name = "idx_fraud_status",         columnList = "status"),
+                @Index(name = "idx_fraud_severity",       columnList = "severity"),
+                @Index(name = "idx_fraud_trip_type",      columnList = "trip_id, alert_type"),
+                @Index(name = "idx_fraud_created",        columnList = "created_at")
         }
 )
 @Getter
@@ -101,23 +105,32 @@ public class FraudAlert {
     private String message;
 
     /**
+     * Review lifecycle status of this alert.
+     */
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 15)
+    @Builder.Default
+    private FraudAlertStatus status = FraudAlertStatus.OPEN;
+
+    /**
      * Whether an operations user has reviewed and resolved this alert.
-     * Unresolved HIGH/CRITICAL alerts should block invoice finalisation (Phase 3).
+     * Kept for backward compatibility with existing queries.
      */
     @Builder.Default
     @Column(nullable = false)
     private Boolean resolved = false;
 
-    /**
-     * Automatically set when record is first saved (not updatable).
-     */
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
     /**
-     * Timestamp when an operations user marked this alert as resolved.
-     * Null until resolved = true.
+     * Timestamp when an operations user marked this alert as resolved/dismissed.
      */
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;

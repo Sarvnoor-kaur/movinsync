@@ -6,6 +6,7 @@ import com.fleetbilling.dto.billing.BillingRunResponse;
 import com.fleetbilling.dto.billing.FixedFeeAllocationResponse;
 import com.fleetbilling.service.BillingAllocationService;
 import com.fleetbilling.service.BillingService;
+import com.fleetbilling.service.IdempotencyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,11 +24,18 @@ public class BillingController {
 
     private final BillingService billingService;
     private final BillingAllocationService billingAllocationService;
+    private final IdempotencyService idempotencyService;
 
     @PostMapping("/runs")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
-    public ResponseEntity<BillingRunResponse> createBillingRun(@Valid @RequestBody BillingRunRequest request) {
-        return new ResponseEntity<>(billingService.createBillingRun(request), HttpStatus.CREATED);
+    public ResponseEntity<BillingRunResponse> createBillingRun(
+            @Valid @RequestBody BillingRunRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        BillingRunResponse response = idempotencyService.executeIdempotently(
+                idempotencyKey, "/api/billing/runs", request,
+                () -> billingService.createBillingRun(request),
+                BillingRunResponse.class);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PostMapping("/preview")
@@ -52,7 +60,13 @@ public class BillingController {
 
     @PostMapping("/runs/{id}/allocate-fixed-fee")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
-    public ResponseEntity<FixedFeeAllocationResponse> allocateFixedFee(@PathVariable Long id) {
-        return new ResponseEntity<>(billingAllocationService.allocateFixedFee(id), HttpStatus.OK);
+    public ResponseEntity<FixedFeeAllocationResponse> allocateFixedFee(
+            @PathVariable Long id,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        FixedFeeAllocationResponse response = idempotencyService.executeIdempotently(
+                idempotencyKey, "/api/billing/runs/" + id + "/allocate-fixed-fee", id,
+                () -> billingAllocationService.allocateFixedFee(id),
+                FixedFeeAllocationResponse.class);
+        return ResponseEntity.ok(response);
     }
 }

@@ -9,6 +9,7 @@ import com.fleetbilling.enums.TripStatus;
 import com.fleetbilling.exception.BusinessException;
 import com.fleetbilling.exception.DuplicateResourceException;
 import com.fleetbilling.exception.ResourceNotFoundException;
+import com.fleetbilling.fraud.FraudDetectionService;
 import com.fleetbilling.repository.TripRepository;
 import com.fleetbilling.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final VehicleRepository vehicleRepository;
+    private final FraudDetectionService fraudDetectionService;
 
     @Transactional
     public TripResponse createTrip(TripCreateRequest request) {
@@ -56,6 +58,8 @@ public class TripService {
                 .build();
 
         Trip saved = tripRepository.save(trip);
+        // Run fraud rules after save — alerts are informational and never block trip creation
+        fraudDetectionService.evaluateTrip(saved);
         return mapToResponse(saved);
     }
 

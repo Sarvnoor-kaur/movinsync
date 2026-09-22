@@ -9,6 +9,7 @@ import com.fleetbilling.enums.TripStatus;
 import com.fleetbilling.exception.BusinessException;
 import com.fleetbilling.exception.DuplicateResourceException;
 import com.fleetbilling.exception.ResourceNotFoundException;
+import com.fleetbilling.fraud.FraudDetectionService;
 import com.fleetbilling.repository.TripRepository;
 import com.fleetbilling.repository.VehicleRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,9 @@ class TripServiceTest {
 
     @Mock
     private VehicleRepository vehicleRepository;
+
+    @Mock
+    private FraudDetectionService fraudDetectionService;
 
     @InjectMocks
     private TripService tripService;
@@ -93,6 +97,7 @@ class TripServiceTest {
         when(tripRepository.existsByExternalTripId(request.getExternalTripId())).thenReturn(false);
         when(vehicleRepository.findById(request.getVehicleId())).thenReturn(Optional.of(vehicle));
         when(tripRepository.save(any(Trip.class))).thenReturn(trip);
+        when(fraudDetectionService.evaluateTrip(any())).thenReturn(List.of());
 
         TripResponse response = tripService.createTrip(request);
 
