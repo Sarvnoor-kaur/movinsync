@@ -13,5 +13,6 @@ package com.fleetbilling.enums;
 public enum TripStatus {
     COMPLETED,
     CANCELLED,
-    MISSING
+    MISSING,
+    NO_SHOW
 }
