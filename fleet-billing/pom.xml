@@ -103,6 +103,25 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JJWT: Java JWT library for creating and parsing JSON Web Tokens -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+
         <!-- H2 In-Memory Database: Used ONLY in tests so they run without a real MySQL server -->
         <dependency>
             <groupId>com.h2database</groupId>

@@ -384,5 +384,119 @@ Use this checklist to confirm Phase 1 is 100% complete before moving to Phase 2:
 
 ---
 
-*Phase 2 will add: JWT authentication, role-based authorization, JPA entities, repositories,
-service layer, DTOs, global exception handling, and API endpoints for vendors and vehicles.*
+## Phase 3 — Authentication & JWT Security
+
+Phase 3 introduces stateless JWT-based authentication and role-based access control (`ADMIN`, `HR`, `EMPLOYEE`).
+
+### Phase 3 Endpoints & Access Control
+
+| Endpoint | Method | Public / Auth | Required Role | Description |
+|----------|--------|---------------|---------------|-------------|
+| `/api/auth/register` | `POST` | Public | None | Register a new user (defaults to `EMPLOYEE` role; `ADMIN` registration blocked) |
+| `/api/auth/login` | `POST` | Public | None | Authenticate with email/password and receive JWT bearer token |
+| `/api/auth/me` | `GET` | Authenticated | Any | Retrieve current authenticated user profile |
+| `/api/admin/test` | `GET` | Authenticated | `ADMIN` | Protected admin test endpoint |
+| `/api/hr/test` | `GET` | Authenticated | `HR` | Protected HR test endpoint |
+| `/api/employee/test` | `GET` | Authenticated | `EMPLOYEE` | Protected employee test endpoint |
+
+---
+
+## Postman / API Testing Guide
+
+### 1. Register a New User
+
+```http
+POST http://localhost:8089/api/auth/register
+Content-Type: application/json
+
+{
+  "name": "Sarvnoor Kaur",
+  "email": "sarvnoor@example.com",
+  "password": "Password@123",
+  "role": "EMPLOYEE"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 1,
+  "name": "Sarvnoor Kaur",
+  "email": "sarvnoor@example.com",
+  "role": "EMPLOYEE",
+  "enabled": true
+}
+```
+
+---
+
+### 2. Login & Obtain JWT Token
+
+```http
+POST http://localhost:8089/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "sarvnoor@example.com",
+  "password": "Password@123"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "userId": 1,
+  "name": "Sarvnoor Kaur",
+  "email": "sarvnoor@example.com",
+  "role": "EMPLOYEE"
+}
+```
+
+---
+
+### 3. Get Current User Profile
+
+```http
+GET http://localhost:8089/api/auth/me
+Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>
+```
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "name": "Sarvnoor Kaur",
+  "email": "sarvnoor@example.com",
+  "role": "EMPLOYEE",
+  "enabled": true
+}
+```
+
+---
+
+### 4. Test Role-Based Access Control
+
+- **Employee Accessing Employee Endpoint (`200 OK`):**
+  ```http
+  GET http://localhost:8089/api/employee/test
+  Authorization: Bearer <EMPLOYEE_JWT_TOKEN>
+  ```
+- **Employee Accessing Admin Endpoint (`403 Forbidden`):**
+  ```http
+  GET http://localhost:8089/api/admin/test
+  Authorization: Bearer <EMPLOYEE_JWT_TOKEN>
+  ```
+  **Response (403 Forbidden):**
+  ```json
+  {
+    "timestamp": "2026-09-22T22:27:00",
+    "status": 403,
+    "error": "Forbidden",
+    "message": "Access denied: You do not have permission to access this resource",
+    "path": "/api/admin/test"
+  }
+  ```
+

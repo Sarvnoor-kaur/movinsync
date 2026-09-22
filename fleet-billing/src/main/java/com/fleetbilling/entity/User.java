@@ -45,6 +45,12 @@ public class User {
     private Long id;
 
     /**
+     * Full name of the user.
+     */
+    @Column(length = 150)
+    private String name;
+
+    /**
      * Login username — unique across the system.
      */
     @NotBlank
@@ -53,7 +59,7 @@ public class User {
     private String username;
 
     /**
-     * User's email — unique, used for notifications and future password reset.
+     * User's email — unique, used for login and notifications.
      */
     @Email
     @NotBlank
@@ -61,9 +67,8 @@ public class User {
     private String email;
 
     /**
-     * BCrypt/Argon2 hash of the user's password.
+     * BCrypt hash of the user's password.
      * Plain-text passwords must NEVER be stored here.
-     * Authentication is implemented in a later phase.
      */
     @NotBlank
     @Column(nullable = false)
@@ -77,6 +82,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private UserRole role;
+
+    /**
+     * Whether the account is active/enabled. Defaults to true.
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean enabled = true;
 
     /**
      * Automatically set by Hibernate when the record is first persisted.

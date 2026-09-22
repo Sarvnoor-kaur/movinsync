@@ -15,6 +15,6 @@ package com.fleetbilling.enums;
  */
 public enum UserRole {
     ADMIN,
-    BILLING_MANAGER,
-    VIEWER
+    HR,
+    EMPLOYEE
 }
