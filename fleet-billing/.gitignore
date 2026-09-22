@@ -1,0 +1,73 @@
+# =============================================================================
+# .gitignore — Fleet Billing Spring Boot / Maven Project
+# =============================================================================
+
+# --- Build output ---
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# --- Maven wrapper ---
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# --- Eclipse ---
+.classpath
+.project
+.settings/
+bin/
+
+# --- VS Code ---
+.vscode/
+*.code-workspace
+
+# --- NetBeans ---
+nbproject/
+build/
+nbbuild/
+dist/
+nbdist/
+
+# --- Environment & Secrets ---
+.env
+.env.*
+application-local.properties
+application-prod.properties
+application-secret.properties
+*.pem
+*.p12
+*.jks
+*.keystore
+
+# --- Logs ---
+logs/
+*.log
+*.log.*
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Temporary files ---
+*.tmp
+*.bak
+*.swp
+*~
+
+# --- Docker ---
+# Keep Dockerfile and docker-compose.yml tracked.
+# Ignore local override files:
+docker-compose.override.yml
+
+# --- Test reports ---
+surefire-reports/
