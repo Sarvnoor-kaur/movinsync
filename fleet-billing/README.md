@@ -477,26 +477,90 @@ Authorization: Bearer <YOUR_JWT_ACCESS_TOKEN>
 
 ---
 
-### 4. Test Role-Based Access Control
+---
 
-- **Employee Accessing Employee Endpoint (`200 OK`):**
-  ```http
-  GET http://localhost:8089/api/employee/test
-  Authorization: Bearer <EMPLOYEE_JWT_TOKEN>
-  ```
-- **Employee Accessing Admin Endpoint (`403 Forbidden`):**
-  ```http
-  GET http://localhost:8089/api/admin/test
-  Authorization: Bearer <EMPLOYEE_JWT_TOKEN>
-  ```
-  **Response (403 Forbidden):**
-  ```json
-  {
-    "timestamp": "2026-09-22T22:27:00",
-    "status": 403,
-    "error": "Forbidden",
-    "message": "Access denied: You do not have permission to access this resource",
-    "path": "/api/admin/test"
-  }
-  ```
+## Phase 4 — Vendor + Vehicle Management
+
+Phase 4 implements complete CRUD endpoints for Vendors and Vehicles with pagination, filtering, activation toggles, business constraints, and role-based authorization.
+
+### Phase 4 Endpoints & Authorization Rules
+
+| Endpoint | Method | Required Role | Description |
+|----------|--------|---------------|-------------|
+| `/api/vendors` | `POST` | `ADMIN` | Create a new vendor (code must be unique) |
+| `/api/vendors/{id}` | `GET` | `ADMIN`, `HR` | Get vendor details by ID |
+| `/api/vendors` | `GET` | `ADMIN`, `HR` | Get paginated list of vendors (`?page=0&size=10`) |
+| `/api/vendors/{id}` | `PUT` | `ADMIN` | Update vendor details |
+| `/api/vendors/{id}` | `DELETE` | `ADMIN` | Delete vendor (rejected with `400 Bad Request` if vehicles exist) |
+| `/api/vehicles` | `POST` | `ADMIN` | Create a new vehicle (registration number must be unique) |
+| `/api/vehicles/{id}` | `GET` | `ADMIN`, `HR`, `EMPLOYEE` | Get vehicle details with vendor information |
+| `/api/vehicles` | `GET` | `ADMIN`, `HR`, `EMPLOYEE` | Get paginated vehicles with filtering (`?vendorId=1&active=true&page=0&size=10`) |
+| `/api/vehicles/{id}` | `PUT` | `ADMIN` | Update vehicle details |
+| `/api/vehicles/{id}/activate` | `PATCH` | `ADMIN` | Activate vehicle (`active = true`) |
+| `/api/vehicles/{id}/deactivate` | `PATCH` | `ADMIN` | Deactivate vehicle (`active = false`) |
+
+---
+
+## Postman Testing Sequence for Phase 4
+
+### 1. Create Vendor (`POST /api/vendors`)
+```http
+POST http://localhost:8089/api/vendors
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "code": "VENDOR001",
+  "name": "ABC Fleet Services",
+  "contactName": "Rajesh Kumar",
+  "contactEmail": "contact@abcfleet.com",
+  "contactPhone": "+919876543210",
+  "address": "New Delhi"
+}
+```
+
+### 2. Create Vehicle (`POST /api/vehicles`)
+```http
+POST http://localhost:8089/api/vehicles
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+Content-Type: application/json
+
+{
+  "registrationNumber": "UP32AB1234",
+  "vendorId": 1,
+  "vehicleType": "SEDAN",
+  "make": "Toyota",
+  "model": "Camry",
+  "active": true
+}
+```
+
+### 3. Get Vehicles with Filtering (`GET /api/vehicles`)
+```http
+GET http://localhost:8089/api/vehicles?vendorId=1&active=true&page=0&size=10
+Authorization: Bearer <EMPLOYEE_JWT_TOKEN>
+```
+
+### 4. Deactivate Vehicle (`PATCH /api/vehicles/1/deactivate`)
+```http
+PATCH http://localhost:8089/api/vehicles/1/deactivate
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+```
+
+### 5. Vendor Deletion Protection (`DELETE /api/vendors/1`)
+```http
+DELETE http://localhost:8089/api/vendors/1
+Authorization: Bearer <ADMIN_JWT_TOKEN>
+```
+**Response (400 Bad Request):**
+```json
+{
+  "timestamp": "2026-09-22T22:45:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Cannot delete vendor because vehicles are associated with it",
+  "path": "/api/vendors/1"
+}
+```
+
 
