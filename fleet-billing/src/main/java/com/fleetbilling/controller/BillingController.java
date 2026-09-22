@@ -3,6 +3,8 @@ package com.fleetbilling.controller;
 import com.fleetbilling.dto.billing.BillingPreviewResponse;
 import com.fleetbilling.dto.billing.BillingRunRequest;
 import com.fleetbilling.dto.billing.BillingRunResponse;
+import com.fleetbilling.dto.billing.FixedFeeAllocationResponse;
+import com.fleetbilling.service.BillingAllocationService;
 import com.fleetbilling.service.BillingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class BillingController {
 
     private final BillingService billingService;
+    private final BillingAllocationService billingAllocationService;
 
     @PostMapping("/runs")
     @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
@@ -45,5 +48,11 @@ public class BillingController {
             @RequestParam(required = false) Long vehicleId,
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(billingService.getBillingRuns(vehicleId, pageable));
+    }
+
+    @PostMapping("/runs/{id}/allocate-fixed-fee")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    public ResponseEntity<FixedFeeAllocationResponse> allocateFixedFee(@PathVariable Long id) {
+        return new ResponseEntity<>(billingAllocationService.allocateFixedFee(id), HttpStatus.OK);
     }
 }
