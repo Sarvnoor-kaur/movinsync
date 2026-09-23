@@ -75,7 +75,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"admin@fleetbilling.com\",\n  \"password\": \"AdminPassword@123\"\n}"
+							"raw": "{\n  \"email\": \"vendor@gmail.com\",\n  \"password\": \"vendor\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/auth/login",
@@ -206,7 +206,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"code\": \"VEN-DELHI-001\",\n  \"name\": \"Delhi Fleet Operations Ltd\",\n  \"taxId\": \"27AAACD4567E1Z5\",\n  \"contactEmail\": \"contact@delhifleet.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"address\": \"Connaught Place, New Delhi\"\n}"
+							"raw": "{\n  \"code\": \"VEN-DELHI-001\",\n  \"name\": \"Delhi Fleet Operations Ltd\",\n  \"taxId\": \"27AAACD4567E1Z5\",\n  \"contactName\": \"Vineet Sharma\",\n  \"contactEmail\": \"contact@delhifleet.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"address\": \"Connaught Place, New Delhi\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/vendors",
@@ -301,8 +301,86 @@
 			]
 		},
 		{
-			"name": "05 Billing & Allocation",
+			"name": "05 Trips",
 			"item": [
+				{
+					"name": "Create Trip",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"externalTripId\": \"TRIP-2026-0901\",\n  \"vehicleId\": {{vehicleId}},\n  \"driverName\": \"Rajesh Kumar\",\n  \"tripDate\": \"2026-09-15\",\n  \"startTime\": \"2026-09-15T08:00:00\",\n  \"endTime\": \"2026-09-15T18:00:00\",\n  \"distanceKm\": 150.5,\n  \"dutyHours\": 10.0,\n  \"waitingHours\": 2.0,\n  \"night\": true,\n  \"tollAmountPaisa\": 15000,\n  \"status\": \"COMPLETED\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/trips",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"trips"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "06 Billing & Allocation",
+			"item": [
+				{
+					"name": "Preview Billing Calculation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"billingMonth\": \"2026-09\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/billing/preview",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"billing",
+								"preview"
+							]
+						}
+					}
+				},
 				{
 					"name": "Execute Billing Run (Idempotent)",
 					"request": {
@@ -324,12 +402,12 @@
 							},
 							{
 								"key": "Idempotency-Key",
-								"value": "BILL-RUN-2026-09-001"
+								"value": "BILL-2026-09-RUN-001"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"yearMonth\": \"2026-09\"\n}"
+							"raw": "{\n  \"vehicleId\": {{vehicleId}},\n  \"billingMonth\": \"2026-09\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/billing/runs",
@@ -343,11 +421,41 @@
 							]
 						}
 					}
+				},
+				{
+					"name": "Allocate Fixed Monthly Fee",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/billing/runs/{{billingRunId}}/allocate-fixed-fee",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"billing",
+								"runs",
+								"{{billingRunId}}",
+								"allocate-fixed-fee"
+							]
+						}
+					}
 				}
 			]
 		},
 		{
-			"name": "06 Health & System",
+			"name": "07 Health & System",
 			"item": [
 				{
 					"name": "Application Custom Health",

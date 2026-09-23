@@ -100,6 +100,7 @@ Base URL: `http://localhost:8089`
   "code": "VEN-DELHI-001",
   "name": "Delhi Fleet Operations Ltd",
   "taxId": "27AAACD4567E1Z5",
+  "contactName": "Vineet Sharma",
   "contactEmail": "contact@delhifleet.com",
   "contactPhone": "+919876543210",
   "address": "Connaught Place, New Delhi"
@@ -210,15 +211,16 @@ Base URL: `http://localhost:8089`
 - **Request Body**:
 ```json
 {
-  "tripCode": "TRIP-2026-0901",
+  "externalTripId": "TRIP-2026-0901",
   "vehicleId": 1,
   "driverName": "Rajesh Kumar",
+  "tripDate": "2026-09-15",
   "startTime": "2026-09-15T08:00:00",
   "endTime": "2026-09-15T18:00:00",
   "distanceKm": 150.5,
   "dutyHours": 10.0,
   "waitingHours": 2.0,
-  "isNightTrip": true,
+  "night": true,
   "tollAmountPaisa": 15000,
   "status": "COMPLETED"
 }
@@ -232,6 +234,13 @@ Base URL: `http://localhost:8089`
 - **Method**: `POST`
 - **Path**: `/api/billing/preview`
 - **Auth Required**: Yes (`ADMIN`, `HR`)
+- **Request Body**:
+```json
+{
+  "vehicleId": 1,
+  "billingMonth": "2026-09"
+}
+```
 
 ### 7.2 Execute Billing Run (Idempotent)
 - **Method**: `POST`
@@ -241,7 +250,7 @@ Base URL: `http://localhost:8089`
 ```json
 {
   "vehicleId": 1,
-  "yearMonth": "2026-09"
+  "billingMonth": "2026-09"
 }
 ```
 
