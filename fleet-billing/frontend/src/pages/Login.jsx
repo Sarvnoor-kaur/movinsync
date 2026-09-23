@@ -23,7 +23,7 @@ export const Login = () => {
     setLoading(true);
     setError('');
     try {
-      await login(email, password);
+      await login({ email, password });
       navigate('/dashboard');
     } catch (err) {
       setError(getErrorMessage(err));
