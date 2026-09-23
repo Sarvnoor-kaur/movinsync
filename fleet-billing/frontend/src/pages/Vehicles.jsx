@@ -5,16 +5,18 @@ import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import { Pagination } from '../components/Pagination';
 import { NotificationBanner } from '../components/NotificationBanner';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { EmptyState } from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../utils/errorHandler';
+import { Car, Plus, Edit2, Trash2 } from 'lucide-react';
 
 export const Vehicles = () => {
   const { hasRole } = useAuth();
-  const isManager = hasRole('ADMIN', 'HR');
+  const isAdmin = hasRole('ADMIN');
 
   const [vehicles, setVehicles] = useState([]);
   const [vendors, setVendors] = useState([]);
-  const [selectedVendorId, setSelectedVendorId] = useState('');
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -23,23 +25,31 @@ export const Vehicles = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentVehicleId, setCurrentVehicleId] = useState(null);
   const [formData, setFormData] = useState({
     registrationNumber: '',
     vendorId: '',
-    vehicleType: 'SEDAN',
     make: '',
     model: '',
-    active: true,
+    vehicleType: 'CAB',
   });
+  const [submitting, setSubmitting] = useState(false);
 
-  const loadVehicles = async (p = 0, vId = selectedVendorId) => {
+  const loadVendors = async () => {
+    try {
+      const res = await vendorApi.getAll({ size: 100 });
+      setVendors(res.data.content || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadVehicles = async (p = 0) => {
     setLoading(true);
     setError('');
     try {
-      const params = { page: p, size: 10 };
-      if (vId) params.vendorId = vId;
-      const res = await vehicleApi.getAll(params);
+      const res = await vehicleApi.getAll({ page: p, size: 10 });
       setVehicles(res.data.content || []);
       setTotalPages(res.data.totalPages || 0);
       setPage(p);
@@ -50,54 +60,40 @@ export const Vehicles = () => {
     }
   };
 
-  const loadVendorsList = async () => {
-    try {
-      const res = await vendorApi.getAll({ size: 100 });
-      setVendors(res.data.content || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
-    loadVendorsList();
-    loadVehicles(0, '');
+    loadVendors();
+    loadVehicles(0);
   }, []);
 
-  const handleFilterChange = (e) => {
-    const vId = e.target.value;
-    setSelectedVendorId(vId);
-    loadVehicles(0, vId);
-  };
-
-  const openCreateModal = () => {
-    setEditingVehicle(null);
+  const handleOpenAdd = () => {
+    setIsEditing(false);
+    setCurrentVehicleId(null);
     setFormData({
       registrationNumber: '',
       vendorId: vendors.length > 0 ? vendors[0].id : '',
-      vehicleType: 'SEDAN',
       make: '',
       model: '',
-      active: true,
+      vehicleType: 'CAB',
     });
     setIsModalOpen(true);
   };
 
-  const openEditModal = (veh) => {
-    setEditingVehicle(veh);
+  const handleOpenEdit = (v) => {
+    setIsEditing(true);
+    setCurrentVehicleId(v.id);
     setFormData({
-      registrationNumber: veh.registrationNumber || '',
-      vendorId: veh.vendorId || '',
-      vehicleType: veh.vehicleType || 'SEDAN',
-      make: veh.make || '',
-      model: veh.model || '',
-      active: veh.active !== undefined ? veh.active : true,
+      registrationNumber: v.registrationNumber || '',
+      vendorId: v.vendorId || v.vendor?.id || '',
+      make: v.make || '',
+      model: v.model || '',
+      vehicleType: v.vehicleType || 'CAB',
     });
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     setError('');
     setSuccess('');
     try {
@@ -105,27 +101,30 @@ export const Vehicles = () => {
         ...formData,
         vendorId: Number(formData.vendorId),
       };
-
-      if (editingVehicle) {
-        await vehicleApi.update(editingVehicle.id, payload);
-        setSuccess(`Vehicle ${formData.registrationNumber} updated successfully!`);
+      if (isEditing) {
+        await vehicleApi.update(currentVehicleId, payload);
+        setSuccess('Vehicle updated successfully.');
       } else {
         await vehicleApi.create(payload);
-        setSuccess(`Vehicle ${formData.registrationNumber} created successfully!`);
+        setSuccess('Vehicle added successfully.');
       }
       setIsModalOpen(false);
-      loadVehicles(page, selectedVendorId);
+      loadVehicles(page);
     } catch (err) {
       setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id, regNo) => {
-    if (!window.confirm(`Are you sure you want to delete vehicle ${regNo}?`)) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to deactivate this vehicle?')) return;
+    setError('');
+    setSuccess('');
     try {
       await vehicleApi.delete(id);
-      setSuccess(`Vehicle ${regNo} deleted.`);
-      loadVehicles(page, selectedVendorId);
+      setSuccess('Vehicle deactivated successfully.');
+      loadVehicles(page);
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -135,136 +134,101 @@ export const Vehicles = () => {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Vehicle Management</h1>
-          <p className="page-subtitle">Track registered fleet vehicles, types, and vendor assignments.</p>
+          <h1 className="page-title">Vehicle Fleet</h1>
+          <p className="page-subtitle">Track fleet registration numbers, vehicle types, and vendor assignments.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <select
-            className="form-control"
-            style={{ width: '220px' }}
-            value={selectedVendorId}
-            onChange={handleFilterChange}
-          >
-            <option value="">All Vendors</option>
-            {vendors.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name}
-              </option>
-            ))}
-          </select>
-          {isManager && (
-            <button className="btn btn-primary" onClick={openCreateModal}>
-              + Add Vehicle
-            </button>
-          )}
-        </div>
+        {isAdmin && (
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
+            <Plus size={18} /> Add New Vehicle
+          </button>
+        )}
       </div>
 
       <NotificationBanner type="error" message={error} onClose={() => setError('')} />
       <NotificationBanner type="success" message={success} onClose={() => setSuccess('')} />
 
-      {loading ? (
-        <div className="flex-center" style={{ padding: '3rem' }}><div className="spinner"></div></div>
-      ) : (
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Registration No.</th>
-                <th>Vendor ID</th>
-                <th>Vehicle Type</th>
-                <th>Make / Model</th>
-                <th>Status</th>
-                {isManager && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {vehicles.length === 0 ? (
+      <div className="table-card">
+        {loading ? (
+          <div style={{ padding: '1.25rem' }}><SkeletonLoader rows={5} /></div>
+        ) : vehicles.length === 0 ? (
+          <EmptyState
+            icon={Car}
+            title="No vehicles in fleet"
+            description="Add your first vehicle registration to start recording trip metrics."
+            actionLabel={isAdmin ? 'Add Vehicle' : null}
+            onAction={handleOpenAdd}
+          />
+        ) : (
+          <div className="table-container">
+            <table className="saas-table">
+              <thead>
                 <tr>
-                  <td colSpan={isManager ? 7 : 6} style={{ textAlign: 'center', padding: '2rem' }}>
-                    No vehicles found. Register a vehicle to begin.
-                  </td>
+                  <th>Vehicle Reg Number</th>
+                  <th>Vendor ID / Name</th>
+                  <th>Make & Model</th>
+                  <th>Vehicle Type</th>
+                  <th>Status</th>
+                  {isAdmin && <th style={{ textAlign: 'right' }}>Actions</th>}
                 </tr>
-              ) : (
-                vehicles.map((veh) => (
-                  <tr key={veh.id}>
-                    <td>#{veh.id}</td>
-                    <td><strong>{veh.registrationNumber}</strong></td>
-                    <td>Vendor #{veh.vendorId}</td>
-                    <td><span className="badge badge-purple">{veh.vehicleType}</span></td>
-                    <td>{veh.make || ''} {veh.model || ''}</td>
-                    <td><StatusBadge status={veh.active ? 'ACTIVE' : 'INACTIVE'} /></td>
-                    {isManager && (
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn btn-secondary btn-sm" onClick={() => openEditModal(veh)}>
-                            Edit
+              </thead>
+              <tbody>
+                {vehicles.map((v) => (
+                  <tr key={v.id}>
+                    <td><strong>{v.registrationNumber}</strong></td>
+                    <td>{v.vendorName || `Vendor #${v.vendorId || v.vendor?.id}`}</td>
+                    <td>{v.make && v.model ? `${v.make} ${v.model}` : v.make || v.model || '—'}</td>
+                    <td><StatusBadge status={v.vehicleType || 'CAB'} /></td>
+                    <td><StatusBadge status={v.active !== false ? 'ACTIVE' : 'INACTIVE'} /></td>
+                    {isAdmin && (
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button className="btn btn-secondary btn-sm" onClick={() => handleOpenEdit(v)} title="Edit Vehicle">
+                            <Edit2 size={14} /> Edit
                           </button>
-                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(veh.id, veh.registrationNumber)}>
-                            Delete
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDelete(v.id)} title="Delete Vehicle">
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
                     )}
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <Pagination page={page} totalPages={totalPages} onPageChange={loadVehicles} />
+      </div>
 
-      <Pagination page={page} totalPages={totalPages} onPageChange={(p) => loadVehicles(p, selectedVendorId)} />
-
-      {/* Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingVehicle ? `Edit Vehicle #${editingVehicle.id}` : 'Register New Vehicle'}
-      >
+      {/* Vehicle Form Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={isEditing ? 'Edit Vehicle' : 'Add Vehicle'}>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Registration Number *</label>
             <input
               type="text"
               className="form-control"
-              required
-              placeholder="e.g. KA01AB1234"
+              placeholder="e.g. KA-01-AB-1234"
               value={formData.registrationNumber}
               onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
+              required
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Vendor *</label>
+            <label className="form-label">Assigned Vendor *</label>
             <select
               className="form-control"
-              required
               value={formData.vendorId}
               onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
+              required
             >
-              <option value="">Select Vendor</option>
+              <option value="">Select Vendor...</option>
               {vendors.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.name} (#{v.id})
+                  {v.name} ({v.code})
                 </option>
               ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Vehicle Type *</label>
-            <select
-              className="form-control"
-              value={formData.vehicleType}
-              onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-            >
-              <option value="SEDAN">SEDAN</option>
-              <option value="SUV">SUV</option>
-              <option value="HATCHBACK">HATCHBACK</option>
-              <option value="BUS">BUS</option>
-              <option value="VAN">VAN</option>
             </select>
           </div>
 
@@ -284,18 +248,32 @@ export const Vehicles = () => {
             <input
               type="text"
               className="form-control"
-              placeholder="e.g. Innova"
+              placeholder="e.g. Innova Crysta"
               value={formData.model}
               onChange={(e) => setFormData({ ...formData, model: e.target.value })}
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Vehicle Type *</label>
+            <select
+              className="form-control"
+              value={formData.vehicleType}
+              onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+            >
+              <option value="CAB">Cab / Sedan</option>
+              <option value="SUV">SUV</option>
+              <option value="VAN">Van / Traveller</option>
+              <option value="BUS">Bus</option>
+            </select>
           </div>
 
           <div className="modal-footer" style={{ padding: '1rem 0 0 0' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              {editingVehicle ? 'Save Changes' : 'Create Vehicle'}
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Saving Vehicle...' : isEditing ? 'Update Vehicle' : 'Save Vehicle'}
             </button>
           </div>
         </form>

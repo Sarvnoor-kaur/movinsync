@@ -5,11 +5,13 @@ import { StatusBadge } from '../components/StatusBadge';
 import { Modal } from '../components/Modal';
 import { Pagination } from '../components/Pagination';
 import { NotificationBanner } from '../components/NotificationBanner';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { EmptyState } from '../components/EmptyState';
 import { formatCurrency } from '../utils/formatCurrency';
-import { formatDateTime } from '../utils/formatDate';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../utils/errorHandler';
 import { Link } from 'react-router-dom';
+import { Receipt, Play, Eye, DollarSign } from 'lucide-react';
 
 export const BillingRuns = () => {
   const { hasRole } = useAuth();
@@ -104,7 +106,7 @@ export const BillingRuns = () => {
         idempotencyKey
       );
       const runId = res.data.billingRunId || res.data.id;
-      setSuccess(`Billing Run #${runId} created successfully! Total amount: ${formatCurrency(res.data.totalPaisa)}`);
+      setSuccess(`Billing Run #${runId} executed successfully! Amount: ${formatCurrency(res.data.totalPaisa)}`);
       setIsModalOpen(false);
       setPreviewData(null);
       loadRuns(page, selectedVehicleId);
@@ -121,7 +123,7 @@ export const BillingRuns = () => {
     try {
       const idempotencyKey = `KEY-ALLOC-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
       const res = await billingApi.allocateFixedFee(runId, idempotencyKey);
-      setSuccess(`Fixed Fee Allocated successfully for Run #${runId}! Allocated Amount: ${formatCurrency(res.data.allocatedAmountPaisa)}`);
+      setSuccess(`Fixed fee allocated across shift trips for Run #${runId}. Amount: ${formatCurrency(res.data.totalAllocatedPaisa)}`);
       loadRuns(page, selectedVehicleId);
       if ((selectedRun?.billingRunId || selectedRun?.id) === runId) {
         const detailRes = await billingApi.getRunById(runId);
@@ -146,7 +148,7 @@ export const BillingRuns = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Billing Engine & Cost Splits</h1>
-          <p className="page-subtitle">Execute monthly billing runs, preview calculations, allocate fixed fees, and review invoice summaries.</p>
+          <p className="page-subtitle">Execute monthly contract billing runs, preview calculations, and allocate fixed monthly fees.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <select
@@ -164,7 +166,7 @@ export const BillingRuns = () => {
           </select>
           {isManager && (
             <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-              ⚡ Run Billing Engine
+              <Play size={18} /> Run Billing Engine
             </button>
           )}
         </div>
@@ -174,14 +176,24 @@ export const BillingRuns = () => {
       <NotificationBanner type="success" message={success} onClose={() => setSuccess('')} />
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedRun ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
-        {/* Table of Runs */}
-        <div className="glass-card">
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Billing Runs</h3>
+        {/* Billing Runs Table */}
+        <div className="table-card">
+          <div className="table-header-bar">
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Billing Run Records</h3>
+          </div>
           {loading ? (
-            <div className="flex-center" style={{ padding: '3rem' }}><div className="spinner"></div></div>
+            <div style={{ padding: '1.25rem' }}><SkeletonLoader rows={5} /></div>
+          ) : runs.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title="No billing runs executed"
+              description="Select a vehicle and click 'Run Billing Engine' to calculate contract billing."
+              actionLabel={isManager ? 'Run Billing Engine' : null}
+              onAction={() => setIsModalOpen(true)}
+            />
           ) : (
             <div className="table-container">
-              <table className="data-table">
+              <table className="saas-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -194,44 +206,36 @@ export const BillingRuns = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {runs.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
-                        No billing runs executed yet. Select a vehicle and click "Run Billing Engine".
-                      </td>
-                    </tr>
-                  ) : (
-                    runs.map((r) => {
-                      const runId = r.billingRunId || r.id;
-                      const isSelected = (selectedRun?.billingRunId || selectedRun?.id) === runId;
-                      return (
-                        <tr key={runId} style={{ background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
-                          <td>#{runId}</td>
-                          <td>{r.vehicleRegistrationNumber || `Vehicle #${r.vehicleId}`}</td>
-                          <td>{r.billingMonth}</td>
-                          <td>{r.tripCount || 0}</td>
-                          <td><strong>{formatCurrency(r.totalPaisa)}</strong></td>
-                          <td><StatusBadge status={r.status} /></td>
-                          <td>
-                            <div style={{ display: 'flex', gap: '0.35rem' }}>
-                              <button className="btn btn-secondary btn-sm" onClick={() => handleInspectRun(runId)}>
-                                Inspect
+                  {runs.map((r) => {
+                    const runId = r.billingRunId || r.id;
+                    const isSelected = (selectedRun?.billingRunId || selectedRun?.id) === runId;
+                    return (
+                      <tr key={runId} style={{ backgroundColor: isSelected ? '#eff6ff' : 'transparent' }}>
+                        <td>#{runId}</td>
+                        <td>{r.vehicleRegistrationNumber || `Vehicle #${r.vehicleId}`}</td>
+                        <td>{r.billingMonth}</td>
+                        <td>{r.tripCount || 0}</td>
+                        <td><strong>{formatCurrency(r.totalPaisa)}</strong></td>
+                        <td><StatusBadge status={r.status} /></td>
+                        <td>
+                          <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                            <button className="btn btn-secondary btn-sm" onClick={() => handleInspectRun(runId)}>
+                              <Eye size={14} /> Inspect
+                            </button>
+                            {isManager && (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                title="Allocate Fixed Monthly Fee"
+                                onClick={() => handleAllocateFixedFee(runId)}
+                              >
+                                <DollarSign size={14} /> Allocate
                               </button>
-                              {isManager && (
-                                <button
-                                  className="btn btn-primary btn-sm"
-                                  title="Allocate Fixed Monthly Fee"
-                                  onClick={() => handleAllocateFixedFee(runId)}
-                                >
-                                  Allocate Fee
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -241,45 +245,45 @@ export const BillingRuns = () => {
 
         {/* Selected Run Inspection Drawer */}
         {selectedRun && (
-          <div className="glass-card">
-            <div className="flex-between" style={{ marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Billing Run #{selectedRun.billingRunId || selectedRun.id} Details</h3>
+          <div className="saas-card">
+            <div className="flex-between" style={{ marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Billing Run #{selectedRun.billingRunId || selectedRun.id} Inspection</h3>
               <button
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                 onClick={() => setSelectedRun(null)}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
               <div>Vehicle: <strong>{selectedRun.vehicleRegistrationNumber || `#${selectedRun.vehicleId}`}</strong></div>
               <div>Billing Month: <strong>{selectedRun.billingMonth}</strong></div>
               <div>Status: <StatusBadge status={selectedRun.status} /></div>
-              <div>Total Charge: <strong style={{ color: 'var(--accent-emerald)', fontSize: '1.1rem' }}>{formatCurrency(selectedRun.totalPaisa)}</strong></div>
+              <div>Total Charge: <strong style={{ color: 'var(--success)', fontSize: '1.1rem' }}>{formatCurrency(selectedRun.totalPaisa)}</strong></div>
             </div>
 
             {isManager && (
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
                 <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => handleAllocateFixedFee(selectedRun.billingRunId || selectedRun.id)}>
-                  💰 Allocate Fixed Fee Across Shift Cost Centers
+                  <DollarSign size={16} /> Allocate Fixed Monthly Fee Across Shift Trips
                 </button>
               </div>
             )}
 
-            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Generated Invoice Breakdown</h4>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Generated Tax Invoice</h4>
             {selectedRun.invoiceId ? (
-              <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
                 <div className="flex-between" style={{ marginBottom: '0.5rem' }}>
                   <span>Invoice Reference:</span>
                   <strong>Invoice #{selectedRun.invoiceId}</strong>
                 </div>
                 <Link to="/invoices" className="btn btn-secondary btn-sm" style={{ width: '100%', marginTop: '0.5rem' }}>
-                  View Complete Invoice →
+                  View Complete Tax Invoice Breakdown →
                 </Link>
               </div>
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Invoice detail attached to billing run.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Tax invoice generated automatically upon completion.</p>
             )}
           </div>
         )}
@@ -319,14 +323,14 @@ export const BillingRuns = () => {
           </button>
 
           {previewData && (
-            <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--accent-blue)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '1.25rem' }}>
-              <h4 style={{ color: 'var(--accent-blue)', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Billing Run Calculation Preview</h4>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 'var(--radius-sm)', padding: '1rem', marginBottom: '1.25rem' }}>
+              <h4 style={{ color: '#2563eb', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Billing Calculation Preview</h4>
               <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 <div>Vehicle: <strong>{previewData.vehicleRegistrationNumber || `#${previewData.vehicleId}`}</strong></div>
                 <div>Billing Month: <strong>{previewData.billingMonth}</strong></div>
                 <div>Total Trips: <strong>{previewData.tripCount || 0}</strong></div>
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
-                  Estimated Total: <strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(previewData.estimatedTotalPaisa)}</strong>
+                <div style={{ borderTop: '1px solid #cbd5e1', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
+                  Estimated Charge: <strong style={{ color: '#16a34a' }}>{formatCurrency(previewData.estimatedTotalPaisa)}</strong>
                 </div>
               </div>
             </div>
@@ -337,7 +341,7 @@ export const BillingRuns = () => {
               Cancel
             </button>
             <button type="button" className="btn btn-primary" onClick={handleExecuteRun} disabled={submitting}>
-              {submitting ? 'Executing Billing Run...' : '⚡ Confirm & Execute Run'}
+              {submitting ? 'Executing Billing Run...' : 'Confirm & Execute Run'}
             </button>
           </div>
         </div>

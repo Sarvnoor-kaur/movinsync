@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { billingApi } from '../api/billingApi';
 import { vehicleApi } from '../api/vehicleApi';
 import { StatusBadge } from '../components/StatusBadge';
-import { Modal } from '../components/Modal';
 import { Pagination } from '../components/Pagination';
 import { NotificationBanner } from '../components/NotificationBanner';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { EmptyState } from '../components/EmptyState';
 import { formatCurrency } from '../utils/formatCurrency';
-import { formatDateTime } from '../utils/formatDate';
 import { getErrorMessage } from '../utils/errorHandler';
+import { FileCheck2, Eye, Printer } from 'lucide-react';
 
 export const Invoices = () => {
   const [invoices, setInvoices] = useState([]);
@@ -20,6 +21,15 @@ export const Invoices = () => {
 
   // Selected Invoice Detail Drawer
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+
+  const loadVehicles = async () => {
+    try {
+      const res = await vehicleApi.getAll({ size: 100 });
+      setVehicles(res.data.content || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const loadInvoices = async (p = 0, vId = selectedVehicleId) => {
     setLoading(true);
@@ -38,15 +48,6 @@ export const Invoices = () => {
     }
   };
 
-  const loadVehicles = async () => {
-    try {
-      const res = await vehicleApi.getAll({ size: 100 });
-      setVehicles(res.data.content || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
     loadVehicles();
     loadInvoices(0, '');
@@ -58,13 +59,17 @@ export const Invoices = () => {
     loadInvoices(0, vId);
   };
 
-  const handleInspectInvoice = async (id) => {
+  const handleInspectInvoice = async (invoiceId) => {
     try {
-      const res = await billingApi.getInvoiceById(id);
+      const res = await billingApi.getInvoiceById(invoiceId);
       setSelectedInvoice(res.data);
     } catch (err) {
       setError(getErrorMessage(err));
     }
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
   };
 
   return (
@@ -72,71 +77,70 @@ export const Invoices = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Tax Invoices</h1>
-          <p className="page-subtitle">Review generated itemized fleet invoices, taxes, cost allocations, and line items.</p>
+          <p className="page-subtitle">Review generated tax invoices, line items, and itemized trip cost calculations.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <select
-            className="form-control"
-            style={{ width: '220px' }}
-            value={selectedVehicleId}
-            onChange={handleFilterChange}
-          >
-            <option value="">All Vehicles</option>
-            {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.registrationNumber} (#{v.id})
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          className="form-control"
+          style={{ width: '220px' }}
+          value={selectedVehicleId}
+          onChange={handleFilterChange}
+        >
+          <option value="">All Vehicles</option>
+          {vehicles.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.registrationNumber} (#{v.id})
+            </option>
+          ))}
+        </select>
       </div>
 
       <NotificationBanner type="error" message={error} onClose={() => setError('')} />
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedInvoice ? '1fr 1fr' : '1fr', gap: '1.5rem' }}>
-        {/* Table of Invoices */}
-        <div className="glass-card">
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Generated Invoices</h3>
+        {/* Invoices Table */}
+        <div className="table-card">
+          <div className="table-header-bar">
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 600 }}>Invoice Register</h3>
+          </div>
           {loading ? (
-            <div className="flex-center" style={{ padding: '3rem' }}><div className="spinner"></div></div>
+            <div style={{ padding: '1.25rem' }}><SkeletonLoader rows={5} /></div>
+          ) : invoices.length === 0 ? (
+            <EmptyState
+              icon={FileCheck2}
+              title="No tax invoices found"
+              description="Tax invoices are automatically created when a billing run is executed."
+            />
           ) : (
             <div className="table-container">
-              <table className="data-table">
+              <table className="saas-table">
                 <thead>
                   <tr>
-                    <th>Invoice No.</th>
+                    <th>Invoice #</th>
                     <th>Vehicle</th>
+                    <th>Date</th>
                     <th>Billing Month</th>
-                    <th>Subtotal</th>
-                    <th>Tax</th>
-                    <th>Total</th>
+                    <th>Total Charge</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
-                        No invoices found. Run the billing engine to generate invoices.
-                      </td>
-                    </tr>
-                  ) : (
-                    invoices.map((inv) => (
-                      <tr key={inv.id} style={{ background: selectedInvoice?.id === inv.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                  {invoices.map((inv) => {
+                    const isSelected = selectedInvoice?.id === inv.id;
+                    return (
+                      <tr key={inv.id} style={{ backgroundColor: isSelected ? '#eff6ff' : 'transparent' }}>
                         <td><strong>{inv.invoiceNumber}</strong></td>
                         <td>{inv.vehicleRegistrationNumber || `Vehicle #${inv.vehicleId}`}</td>
+                        <td>{inv.invoiceDate}</td>
                         <td>{inv.billingMonth}</td>
-                        <td>{formatCurrency(inv.subtotalPaisa)}</td>
-                        <td>{formatCurrency(inv.taxPaisa)}</td>
-                        <td><strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(inv.totalPaisa)}</strong></td>
+                        <td><strong style={{ color: 'var(--success)' }}>{formatCurrency(inv.totalPaisa)}</strong></td>
                         <td>
                           <button className="btn btn-secondary btn-sm" onClick={() => handleInspectInvoice(inv.id)}>
-                            Inspect
+                            <Eye size={14} /> View Items
                           </button>
                         </td>
                       </tr>
-                    ))
-                  )}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -144,80 +148,66 @@ export const Invoices = () => {
           <Pagination page={page} totalPages={totalPages} onPageChange={(p) => loadInvoices(p, selectedVehicleId)} />
         </div>
 
-        {/* Selected Invoice View */}
+        {/* Selected Invoice Item Breakdown Drawer */}
         {selectedInvoice && (
-          <div className="glass-card" style={{ background: '#ffffff', color: '#0f172a', padding: '2rem' }}>
-            <div className="flex-between" style={{ borderBottom: '2px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+          <div className="saas-card" id="invoice-print-area">
+            <div className="flex-between" style={{ marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
               <div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b' }}>TAX INVOICE</h2>
-                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Reference: #{selectedInvoice.invoiceNumber}</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Tax Invoice {selectedInvoice.invoiceNumber}</h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Date: {selectedInvoice.invoiceDate}</span>
               </div>
-              <button
-                style={{ background: '#f1f5f9', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
-                onClick={() => setSelectedInvoice(null)}
-              >
-                ✕ Close
-              </button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              <div>
-                <span style={{ color: '#64748b' }}>Vehicle Reg:</span> <strong>{selectedInvoice.vehicleRegistrationNumber || selectedInvoice.vehicleId}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Billing Month:</span> <strong>{selectedInvoice.billingMonth}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Invoice Date:</span> <strong>{selectedInvoice.invoiceDate || '—'}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#64748b' }}>Billing Run ID:</span> <strong>#{selectedInvoice.billingRunId}</strong>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-secondary btn-sm" onClick={handlePrintInvoice} title="Print Invoice">
+                  <Printer size={14} /> Print
+                </button>
+                <button
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                  onClick={() => setSelectedInvoice(null)}
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#1e293b' }}>Itemized Breakdown</h4>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <tr>
-                    <th style={{ padding: '0.75rem 1rem' }}>Description</th>
-                    <th style={{ padding: '0.75rem 1rem' }}>Type</th>
-                    <th style={{ padding: '0.75rem 1rem' }}>Rate</th>
-                    <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedInvoice.items && selectedInvoice.items.map((item) => (
-                    <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '0.75rem 1rem' }}>
-                        <div><strong>{item.description}</strong></div>
-                        {item.explanation && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.explanation}</div>}
-                      </td>
-                      <td style={{ padding: '0.75rem 1rem' }}>{item.pricingType || 'TRIP'}</td>
-                      <td style={{ padding: '0.75rem 1rem' }}>{formatCurrency(item.ratePaisa)}</td>
-                      <td style={{ padding: '0.75rem 1rem', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(item.amountPaisa)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', fontSize: '0.95rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+              <div>Vehicle: <strong>{selectedInvoice.vehicleRegistrationNumber || `#${selectedInvoice.vehicleId}`}</strong></div>
+              <div>Billing Period: <strong>{selectedInvoice.billingMonth}</strong></div>
               <div>Subtotal: <strong>{formatCurrency(selectedInvoice.subtotalPaisa)}</strong></div>
-              <div>Tax (GST 18%): <strong>{formatCurrency(selectedInvoice.taxPaisa)}</strong></div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#059669', borderTop: '2px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
-                Total Payable: {formatCurrency(selectedInvoice.totalPaisa)}
-              </div>
+              <div>Invoice Total: <strong style={{ color: 'var(--success)', fontSize: '1.1rem' }}>{formatCurrency(selectedInvoice.totalPaisa)}</strong></div>
             </div>
 
-            <div style={{ marginTop: '2rem', textAlign: 'right' }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => window.print()}
-              >
-                🖨️ Print / Export Invoice
-              </button>
-            </div>
+            <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Itemized Line Items</h4>
+            {(!selectedInvoice.items || selectedInvoice.items.length === 0) ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No line items attached.</p>
+            ) : (
+              <div className="table-container">
+                <table className="saas-table">
+                  <thead>
+                    <tr>
+                      <th>Trip ID</th>
+                      <th>Description</th>
+                      <th>Type</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedInvoice.items.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.externalTripId ? `#${item.externalTripId}` : '—'}</td>
+                        <td>
+                          <div>{item.description}</div>
+                          {item.explanation && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.explanation}</div>
+                          )}
+                        </td>
+                        <td><StatusBadge status={item.pricingType} /></td>
+                        <td><strong>{formatCurrency(item.amountPaisa)}</strong></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

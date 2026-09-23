@@ -1,28 +1,37 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 
-export const Modal = ({ isOpen, onClose, title, children, footer }) => {
+export const Modal = ({ isOpen, onClose, title, children }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600 }}>{title}</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>{title}</h3>
           <button
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              fontSize: '1.25rem',
-              cursor: 'pointer',
-            }}
+            aria-label="Close modal"
           >
-            ✕
+            <X size={20} />
           </button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer && <div className="modal-footer">{footer}</div>}
       </div>
     </div>
   );

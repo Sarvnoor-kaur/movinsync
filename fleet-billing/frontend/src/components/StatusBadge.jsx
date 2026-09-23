@@ -1,17 +1,24 @@
 import React from 'react';
 
 export const StatusBadge = ({ status }) => {
-  if (!status) return <span className="badge badge-info">N/A</span>;
-
+  if (!status) return null;
   const s = String(status).toUpperCase();
 
-  let badgeClass = 'badge-info';
-  if (['COMPLETED', 'RESOLVED', 'ACTIVE', 'PAID'].includes(s)) badgeClass = 'badge-success';
-  if (['PENDING', 'OPEN', 'IN_PROGRESS', 'DRAFT'].includes(s)) badgeClass = 'badge-warning';
-  if (['FAILED', 'FLAGGED', 'CANCELLED', 'SUSPECTED_OVERLAP', 'SUSPECTED_KM_SPIKE', 'MISSING_CONTRACT', 'DISMISSED'].includes(s)) badgeClass = 'badge-danger';
-  if (['HIGH', 'CRITICAL'].includes(s)) badgeClass = 'badge-danger';
-  if (['MEDIUM'].includes(s)) badgeClass = 'badge-warning';
-  if (['LOW'].includes(s)) badgeClass = 'badge-info';
+  let variant = 'neutral';
+  if (['COMPLETED', 'ACTIVE', 'RESOLVED', 'ADMIN'].includes(s)) {
+    variant = 'success';
+  } else if (['STARTED', 'PROCESSING', 'HR', 'HIGH', 'MEDIUM', 'REVIEWED'].includes(s)) {
+    variant = 'warning';
+  } else if (['FAILED', 'CANCELLED', 'CRITICAL', 'DISMISSED', 'SUSPICIOUS_TRIP', 'IMPOSSIBLE_DISTANCE'].includes(s)) {
+    variant = 'danger';
+  } else if (['EMPLOYEE', 'OPEN', 'PER_KM', 'PER_TRIP', 'FIXED_MONTHLY'].includes(s)) {
+    variant = 'info';
+  }
 
-  return <span className={`badge ${badgeClass}`}>{s.replace(/_/g, ' ')}</span>;
+  return (
+    <span className={`status-badge ${variant}`}>
+      <span className="dot" />
+      {s.replace(/_/g, ' ')}
+    </span>
+  );
 };
