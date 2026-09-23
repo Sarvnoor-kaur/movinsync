@@ -1,5 +1,6 @@
 package com.fleetbilling.service;
 
+import com.fleetbilling.config.CacheNames;
 import com.fleetbilling.dto.pricingslab.PricingSlabCreateRequest;
 import com.fleetbilling.dto.pricingslab.PricingSlabResponse;
 import com.fleetbilling.dto.pricingslab.PricingSlabUpdateRequest;
@@ -11,6 +12,8 @@ import com.fleetbilling.exception.ResourceNotFoundException;
 import com.fleetbilling.repository.ContractVersionRepository;
 import com.fleetbilling.repository.PricingSlabRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,7 @@ public class PricingSlabService {
     private final ContractVersionRepository contractVersionRepository;
 
     @Transactional
+    @CacheEvict(value = CacheNames.PRICING_SLABS, allEntries = true)
     public PricingSlabResponse createPricingSlab(Long contractVersionId, PricingSlabCreateRequest request) {
         ContractVersion contractVersion = contractVersionRepository.findById(contractVersionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ContractVersion not found with id " + contractVersionId));
@@ -49,6 +53,7 @@ public class PricingSlabService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PRICING_SLABS, key = "'version_' + #contractVersionId")
     public List<PricingSlabResponse> getSlabsByContractVersionId(Long contractVersionId) {
         return pricingSlabRepository.findByContractVersionIdOrderByFromValueAsc(contractVersionId)
                 .stream()
@@ -57,6 +62,7 @@ public class PricingSlabService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PRICING_SLABS, key = "#slabId")
     public PricingSlabResponse getPricingSlabById(Long contractVersionId, Long slabId) {
         PricingSlab slab = pricingSlabRepository.findById(slabId)
                 .orElseThrow(() -> new ResourceNotFoundException("PricingSlab not found with id " + slabId));
@@ -69,6 +75,7 @@ public class PricingSlabService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.PRICING_SLABS, allEntries = true)
     public PricingSlabResponse updatePricingSlab(Long contractVersionId, Long slabId, PricingSlabUpdateRequest request) {
         PricingSlab slab = pricingSlabRepository.findById(slabId)
                 .orElseThrow(() -> new ResourceNotFoundException("PricingSlab not found with id " + slabId));
@@ -98,6 +105,7 @@ public class PricingSlabService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.PRICING_SLABS, allEntries = true)
     public void deletePricingSlab(Long contractVersionId, Long slabId) {
         PricingSlab slab = pricingSlabRepository.findById(slabId)
                 .orElseThrow(() -> new ResourceNotFoundException("PricingSlab not found with id " + slabId));

@@ -1,5 +1,6 @@
 package com.fleetbilling.service;
 
+import com.fleetbilling.config.CacheNames;
 import com.fleetbilling.dto.vehicle.VehicleCreateRequest;
 import com.fleetbilling.dto.vehicle.VehicleResponse;
 import com.fleetbilling.dto.vehicle.VehicleUpdateRequest;
@@ -11,6 +12,8 @@ import com.fleetbilling.repository.VehicleRepository;
 import com.fleetbilling.repository.VendorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class VehicleService {
     private final VendorRepository vendorRepository;
 
     @Transactional
+    @CacheEvict(value = CacheNames.VEHICLES, allEntries = true)
     public VehicleResponse createVehicle(VehicleCreateRequest request) {
         log.info("Creating vehicle with registration: {}", request.getRegistrationNumber());
 
@@ -49,6 +53,7 @@ public class VehicleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.VEHICLES, key = "#id")
     public VehicleResponse getVehicleById(Long id) {
         Vehicle vehicle = vehicleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + id));
@@ -73,6 +78,7 @@ public class VehicleService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.VEHICLES, key = "#id")
     public VehicleResponse updateVehicle(Long id, VehicleUpdateRequest request) {
         log.info("Updating vehicle id: {}", id);
 
@@ -98,6 +104,7 @@ public class VehicleService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.VEHICLES, key = "#id")
     public VehicleResponse activateVehicle(Long id) {
         log.info("Activating vehicle id: {}", id);
         Vehicle vehicle = vehicleRepository.findById(id)
@@ -108,6 +115,7 @@ public class VehicleService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.VEHICLES, key = "#id")
     public VehicleResponse deactivateVehicle(Long id) {
         log.info("Deactivating vehicle id: {}", id);
         Vehicle vehicle = vehicleRepository.findById(id)

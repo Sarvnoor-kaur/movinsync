@@ -1,5 +1,6 @@
 package com.fleetbilling.config;
 
+import com.fleetbilling.filter.CorrelationIdFilter;
 import com.fleetbilling.security.CustomAccessDeniedHandler;
 import com.fleetbilling.security.CustomAuthenticationEntryPoint;
 import com.fleetbilling.security.CustomUserDetailsService;
@@ -34,6 +35,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CorrelationIdFilter correlationIdFilter;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
@@ -65,6 +67,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(correlationIdFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -94,7 +97,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Idempotency-Key"));
+        configuration.setExposedHeaders(List.of("Authorization", "Idempotency-Key", "X-Correlation-ID"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

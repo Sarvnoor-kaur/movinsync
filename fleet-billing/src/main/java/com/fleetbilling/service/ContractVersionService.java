@@ -1,5 +1,6 @@
 package com.fleetbilling.service;
 
+import com.fleetbilling.config.CacheNames;
 import com.fleetbilling.dto.contractversion.ContractVersionCreateRequest;
 import com.fleetbilling.dto.contractversion.ContractVersionResponse;
 import com.fleetbilling.dto.contractversion.ContractVersionUpdateRequest;
@@ -11,6 +12,8 @@ import com.fleetbilling.exception.ResourceNotFoundException;
 import com.fleetbilling.repository.ContractRepository;
 import com.fleetbilling.repository.ContractVersionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ public class ContractVersionService {
     private final ContractRepository contractRepository;
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACT_VERSIONS, allEntries = true)
     public ContractVersionResponse createContractVersion(Long contractId, ContractVersionCreateRequest request) {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id " + contractId));
@@ -57,6 +61,7 @@ public class ContractVersionService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.CONTRACT_VERSIONS, key = "'contract_' + #contractId")
     public List<ContractVersionResponse> getVersionsByContractId(Long contractId) {
         return contractVersionRepository.findByContractIdOrderByEffectiveFromAsc(contractId)
                 .stream()
@@ -65,6 +70,7 @@ public class ContractVersionService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.CONTRACT_VERSIONS, key = "#contractId + '_' + #versionId")
     public ContractVersionResponse getContractVersionById(Long contractId, Long versionId) {
         ContractVersion version = contractVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ContractVersion not found with id " + versionId));
@@ -77,6 +83,7 @@ public class ContractVersionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACT_VERSIONS, allEntries = true)
     public ContractVersionResponse updateContractVersion(Long contractId, Long versionId, ContractVersionUpdateRequest request) {
         ContractVersion version = contractVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ContractVersion not found with id " + versionId));
@@ -108,6 +115,7 @@ public class ContractVersionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACT_VERSIONS, allEntries = true)
     public void deleteContractVersion(Long contractId, Long versionId) {
         ContractVersion version = contractVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("ContractVersion not found with id " + versionId));

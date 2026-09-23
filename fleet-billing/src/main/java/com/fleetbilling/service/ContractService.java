@@ -1,5 +1,6 @@
 package com.fleetbilling.service;
 
+import com.fleetbilling.config.CacheNames;
 import com.fleetbilling.dto.contract.ContractCreateRequest;
 import com.fleetbilling.dto.contract.ContractResponse;
 import com.fleetbilling.dto.contract.ContractUpdateRequest;
@@ -14,6 +15,8 @@ import com.fleetbilling.repository.ContractRepository;
 import com.fleetbilling.repository.VehicleRepository;
 import com.fleetbilling.repository.VendorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class ContractService {
     private final VehicleRepository vehicleRepository;
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACTS, allEntries = true)
     public ContractResponse createContract(ContractCreateRequest request) {
         if (contractRepository.existsByContractNumber(request.getContractCode())) {
             throw new DuplicateResourceException("Contract already exists with contractNumber: " + request.getContractCode());
@@ -62,6 +66,7 @@ public class ContractService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.CONTRACTS, key = "#id")
     public ContractResponse getContractById(Long id) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id " + id));
@@ -75,6 +80,7 @@ public class ContractService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACTS, key = "#id")
     public ContractResponse updateContract(Long id, ContractUpdateRequest request) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id " + id));
@@ -111,6 +117,7 @@ public class ContractService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.CONTRACTS, key = "#id")
     public void deleteContract(Long id) {
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contract not found with id " + id));
