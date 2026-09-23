@@ -106,15 +106,18 @@ export const Dashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentRuns.map((run) => (
-                    <tr key={run.id}>
-                      <td>#{run.id}</td>
-                      <td>Vehicle #{run.vehicleId}</td>
-                      <td>{run.billingMonth}/{run.billingYear}</td>
-                      <td><strong>{formatCurrency(run.totalAmountPaisa)}</strong></td>
-                      <td><StatusBadge status={run.status} /></td>
-                    </tr>
-                  ))}
+                  {recentRuns.map((run) => {
+                    const runId = run.billingRunId || run.id;
+                    return (
+                      <tr key={runId}>
+                        <td>#{runId}</td>
+                        <td>{run.vehicleRegistrationNumber || `Vehicle #${run.vehicleId}`}</td>
+                        <td>{run.billingMonth}</td>
+                        <td><strong>{formatCurrency(run.totalPaisa)}</strong></td>
+                        <td><StatusBadge status={run.status} /></td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

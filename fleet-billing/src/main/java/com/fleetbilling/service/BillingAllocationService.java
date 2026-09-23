@@ -95,6 +95,9 @@ public class BillingAllocationService {
 
         // ── 4. Find active contract ───────────────────────────────────────────
         List<Contract> contracts = contractRepository.findByVehicleId(vehicle.getId());
+        if (contracts.isEmpty() && vehicle.getVendor() != null) {
+            contracts = contractRepository.findByVendorId(vehicle.getVendor().getId());
+        }
         Contract contract = contracts.stream()
                 .filter(c -> c.getStartDate() != null && !c.getStartDate().isAfter(monthStart))
                 .filter(c -> c.getEndDate() == null || !c.getEndDate().isBefore(monthEnd))

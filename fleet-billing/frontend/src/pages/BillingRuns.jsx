@@ -103,7 +103,8 @@ export const BillingRuns = () => {
         { vehicleId: Number(targetVehicleId), billingMonth },
         idempotencyKey
       );
-      setSuccess(`Billing Run #${res.data.id} created successfully! Total amount: ${formatCurrency(res.data.totalAmountPaisa)}`);
+      const runId = res.data.billingRunId || res.data.id;
+      setSuccess(`Billing Run #${runId} created successfully! Total amount: ${formatCurrency(res.data.totalPaisa)}`);
       setIsModalOpen(false);
       setPreviewData(null);
       loadRuns(page, selectedVehicleId);
@@ -122,7 +123,7 @@ export const BillingRuns = () => {
       const res = await billingApi.allocateFixedFee(runId, idempotencyKey);
       setSuccess(`Fixed Fee Allocated successfully for Run #${runId}! Allocated Amount: ${formatCurrency(res.data.allocatedAmountPaisa)}`);
       loadRuns(page, selectedVehicleId);
-      if (selectedRun?.id === runId) {
+      if ((selectedRun?.billingRunId || selectedRun?.id) === runId) {
         const detailRes = await billingApi.getRunById(runId);
         setSelectedRun(detailRes.data);
       }
@@ -185,7 +186,7 @@ export const BillingRuns = () => {
                   <tr>
                     <th>ID</th>
                     <th>Vehicle</th>
-                    <th>Period</th>
+                    <th>Month</th>
                     <th>Trips</th>
                     <th>Total Charge</th>
                     <th>Status</th>
@@ -196,36 +197,40 @@ export const BillingRuns = () => {
                   {runs.length === 0 ? (
                     <tr>
                       <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>
-                        No billing runs executed yet.
+                        No billing runs executed yet. Select a vehicle and click "Run Billing Engine".
                       </td>
                     </tr>
                   ) : (
-                    runs.map((r) => (
-                      <tr key={r.id} style={{ background: selectedRun?.id === r.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
-                        <td>#{r.id}</td>
-                        <td>Vehicle #{r.vehicleId}</td>
-                        <td>{r.billingMonth}/{r.billingYear}</td>
-                        <td>{r.totalTrips || 0}</td>
-                        <td><strong>{formatCurrency(r.totalAmountPaisa)}</strong></td>
-                        <td><StatusBadge status={r.status} /></td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.35rem' }}>
-                            <button className="btn btn-secondary btn-sm" onClick={() => handleInspectRun(r.id)}>
-                              Inspect
-                            </button>
-                            {isManager && (
-                              <button
-                                className="btn btn-primary btn-sm"
-                                title="Allocate Fixed Monthly Fee"
-                                onClick={() => handleAllocateFixedFee(r.id)}
-                              >
-                                Allocate Fee
+                    runs.map((r) => {
+                      const runId = r.billingRunId || r.id;
+                      const isSelected = (selectedRun?.billingRunId || selectedRun?.id) === runId;
+                      return (
+                        <tr key={runId} style={{ background: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                          <td>#{runId}</td>
+                          <td>{r.vehicleRegistrationNumber || `Vehicle #${r.vehicleId}`}</td>
+                          <td>{r.billingMonth}</td>
+                          <td>{r.tripCount || 0}</td>
+                          <td><strong>{formatCurrency(r.totalPaisa)}</strong></td>
+                          <td><StatusBadge status={r.status} /></td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '0.35rem' }}>
+                              <button className="btn btn-secondary btn-sm" onClick={() => handleInspectRun(runId)}>
+                                Inspect
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              {isManager && (
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  title="Allocate Fixed Monthly Fee"
+                                  onClick={() => handleAllocateFixedFee(runId)}
+                                >
+                                  Allocate Fee
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -238,7 +243,7 @@ export const BillingRuns = () => {
         {selectedRun && (
           <div className="glass-card">
             <div className="flex-between" style={{ marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Billing Run #{selectedRun.id} Details</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Billing Run #{selectedRun.billingRunId || selectedRun.id} Details</h3>
               <button
                 style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}
                 onClick={() => setSelectedRun(null)}
@@ -248,15 +253,15 @@ export const BillingRuns = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', background: 'rgba(15, 23, 42, 0.5)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
-              <div>Vehicle ID: <strong>#{selectedRun.vehicleId}</strong></div>
-              <div>Billing Month: <strong>{selectedRun.billingMonth}/{selectedRun.billingYear}</strong></div>
+              <div>Vehicle: <strong>{selectedRun.vehicleRegistrationNumber || `#${selectedRun.vehicleId}`}</strong></div>
+              <div>Billing Month: <strong>{selectedRun.billingMonth}</strong></div>
               <div>Status: <StatusBadge status={selectedRun.status} /></div>
-              <div>Total Charge: <strong style={{ color: 'var(--accent-emerald)', fontSize: '1.1rem' }}>{formatCurrency(selectedRun.totalAmountPaisa)}</strong></div>
+              <div>Total Charge: <strong style={{ color: 'var(--accent-emerald)', fontSize: '1.1rem' }}>{formatCurrency(selectedRun.totalPaisa)}</strong></div>
             </div>
 
             {isManager && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => handleAllocateFixedFee(selectedRun.id)}>
+                <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => handleAllocateFixedFee(selectedRun.billingRunId || selectedRun.id)}>
                   💰 Allocate Fixed Fee Across Shift Cost Centers
                 </button>
               </div>
@@ -317,14 +322,11 @@ export const BillingRuns = () => {
             <div style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid var(--accent-blue)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '1.25rem' }}>
               <h4 style={{ color: 'var(--accent-blue)', fontSize: '0.95rem', marginBottom: '0.5rem' }}>Billing Run Calculation Preview</h4>
               <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                <div>Total Trips: <strong>{previewData.totalTrips || 0}</strong></div>
-                <div>Total Distance: <strong>{previewData.totalDistanceKm || 0} km</strong></div>
-                <div>Base Trip Charges: <strong>{formatCurrency(previewData.baseTripChargePaisa)}</strong></div>
-                <div>Overage Km Charges: <strong>{formatCurrency(previewData.overageKmChargePaisa)}</strong></div>
-                <div>Night Charges: <strong>{formatCurrency(previewData.nightChargePaisa)}</strong></div>
-                <div>Toll Charges: <strong>{formatCurrency(previewData.tollChargePaisa)}</strong></div>
+                <div>Vehicle: <strong>{previewData.vehicleRegistrationNumber || `#${previewData.vehicleId}`}</strong></div>
+                <div>Billing Month: <strong>{previewData.billingMonth}</strong></div>
+                <div>Total Trips: <strong>{previewData.tripCount || 0}</strong></div>
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', marginTop: '0.25rem', fontSize: '1rem' }}>
-                  Estimated Total: <strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(previewData.totalAmountPaisa)}</strong>
+                  Estimated Total: <strong style={{ color: 'var(--accent-emerald)' }}>{formatCurrency(previewData.estimatedTotalPaisa)}</strong>
                 </div>
               </div>
             </div>

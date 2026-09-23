@@ -281,13 +281,16 @@ public class BillingService {
      */
     private Contract findActiveContract(Vehicle vehicle, LocalDate date) {
         List<Contract> contracts = contractRepository.findByVehicleId(vehicle.getId());
+        if (contracts.isEmpty() && vehicle.getVendor() != null) {
+            contracts = contractRepository.findByVendorId(vehicle.getVendor().getId());
+        }
         return contracts.stream()
                 .filter(c -> c.getStartDate() != null && !c.getStartDate().isAfter(date))
                 .filter(c -> c.getEndDate() == null || !c.getEndDate().isBefore(date))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No active contract found for vehicle " + vehicle.getId() +
-                        " on " + date));
+                        " (Vendor " + (vehicle.getVendor() != null ? vehicle.getVendor().getName() : "N/A") + ") on " + date));
     }
 
     private String generateInvoiceNumber(Vehicle vehicle, LocalDate billingMonthDate) {
