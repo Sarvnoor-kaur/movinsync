@@ -24,7 +24,7 @@ public class FraudAlertController {
     private final FraudAlertService fraudAlertService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
     public ResponseEntity<Page<FraudAlertResponse>> getAlerts(
             @RequestParam(required = false) FraudAlertStatus status,
             @RequestParam(required = false) FraudSeverity severity,
@@ -40,7 +40,7 @@ public class FraudAlertController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
     public ResponseEntity<FraudAlertResponse> getAlertById(@PathVariable Long id) {
         return ResponseEntity.ok(fraudAlertService.getAlertById(id));
     }

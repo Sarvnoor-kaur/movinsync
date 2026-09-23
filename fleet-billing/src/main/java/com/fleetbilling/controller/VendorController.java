@@ -29,14 +29,14 @@ public class VendorController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
     public ResponseEntity<VendorResponse> getVendorById(@PathVariable Long id) {
         VendorResponse response = vendorService.getVendorById(id);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR', 'EMPLOYEE')")
     public ResponseEntity<Page<VendorResponse>> getAllVendors(@PageableDefault(size = 10) Pageable pageable) {
         Page<VendorResponse> vendors = vendorService.getAllVendors(pageable);
         return ResponseEntity.ok(vendors);

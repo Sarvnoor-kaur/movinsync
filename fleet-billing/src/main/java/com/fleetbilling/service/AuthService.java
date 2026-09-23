@@ -34,11 +34,7 @@ public class AuthService {
             throw new EmailAlreadyExistsException("User with email '" + request.getEmail() + "' already exists");
         }
 
-        if (request.getRole() == UserRole.ADMIN) {
-            throw new InvalidRoleException("Self-registration as ADMIN is not permitted");
-        }
-
-        UserRole assignedRole = (request.getRole() != null) ? request.getRole() : UserRole.EMPLOYEE;
+        UserRole assignedRole = (request.getRole() != null) ? request.getRole() : UserRole.HR;
 
         User user = User.builder()
                 .name(request.getName())

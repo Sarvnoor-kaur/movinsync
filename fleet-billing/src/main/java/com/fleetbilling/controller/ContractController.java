@@ -23,7 +23,7 @@ public class ContractController {
     private final ContractService contractService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ContractResponse> createContract(@Valid @RequestBody ContractCreateRequest request) {
         ContractResponse response = contractService.createContract(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -46,7 +46,7 @@ public class ContractController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ContractResponse> updateContract(
             @PathVariable Long id,
             @Valid @RequestBody ContractUpdateRequest request) {
@@ -54,7 +54,7 @@ public class ContractController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<Void> deleteContract(@PathVariable Long id) {
         contractService.deleteContract(id);
         return ResponseEntity.noContent().build();

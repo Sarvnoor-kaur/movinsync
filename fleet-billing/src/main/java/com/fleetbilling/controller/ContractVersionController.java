@@ -21,7 +21,7 @@ public class ContractVersionController {
     private final ContractVersionService contractVersionService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ContractVersionResponse> createContractVersion(
             @PathVariable Long contractId,
             @Valid @RequestBody ContractVersionCreateRequest request) {
@@ -45,7 +45,7 @@ public class ContractVersionController {
     }
 
     @PutMapping("/{versionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<ContractVersionResponse> updateContractVersion(
             @PathVariable Long contractId,
             @PathVariable Long versionId,
@@ -54,7 +54,7 @@ public class ContractVersionController {
     }
 
     @DeleteMapping("/{versionId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<Void> deleteContractVersion(
             @PathVariable Long contractId,
             @PathVariable Long versionId) {

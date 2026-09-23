@@ -21,7 +21,7 @@ public class PricingSlabController {
     private final PricingSlabService pricingSlabService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<PricingSlabResponse> createPricingSlab(
             @PathVariable Long contractId,
             @PathVariable Long versionId,
@@ -48,7 +48,7 @@ public class PricingSlabController {
     }
 
     @PutMapping("/{slabId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<PricingSlabResponse> updatePricingSlab(
             @PathVariable Long contractId,
             @PathVariable Long versionId,
@@ -58,7 +58,7 @@ public class PricingSlabController {
     }
 
     @DeleteMapping("/{slabId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
     public ResponseEntity<Void> deletePricingSlab(
             @PathVariable Long contractId,
             @PathVariable Long versionId,
