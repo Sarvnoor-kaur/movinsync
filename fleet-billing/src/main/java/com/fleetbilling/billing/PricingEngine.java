@@ -29,6 +29,7 @@ public class PricingEngine {
 
     private final PerKmPricingStrategy perKmStrategy;
     private final PerTripPricingStrategy perTripStrategy;
+    private final FixedMonthlyPricingStrategy fixedMonthlyStrategy;
     private final PricingSlabRepository pricingSlabRepository;
 
     /**
@@ -84,9 +85,7 @@ public class PricingEngine {
         return switch (billingType) {
             case PER_KM    -> perKmStrategy;
             case PER_TRIP  -> perTripStrategy;
-            case FIXED_MONTHLY -> throw new BusinessException(
-                    "FIXED_MONTHLY billing is handled in Phase 8. " +
-                    "Contract version " + contractVersionId + " cannot be billed in Phase 7.");
+            case FIXED_MONTHLY -> fixedMonthlyStrategy;
         };
     }
 
