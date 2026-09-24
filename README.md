@@ -128,6 +128,7 @@ FleetFlow automates this entire lifecycle through a secure Spring Boot 3.3.4 bac
 
 | Document | Description | Link |
 |:---|:---|:---|
+| 🎤 **Project Presentation** | Master presentation guide & complete file-by-file codebase breakdown. | [docs/PROJECT_PRESENTATION.md](docs/PROJECT_PRESENTATION.md) |
 | 📋 **Project Overview** | Complete business domain analysis, target users, and RBAC permissions. | [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) |
 | 📐 **System Architecture** | Technical layers, security filter chain, Redis caching flow, and request lifecycle. | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | 🗄️ **Database Design** | Relational schema, Mermaid ER diagram, indexes, constraints, and entity mappings. | [docs/DATABASE.md](docs/DATABASE.md) |
@@ -187,8 +188,19 @@ movinsync/
 │
 ├── README.md                      <-- Root Landing Page & Overview
 │
+├── problems_resolved/             <-- Comprehensive Problems & Solutions Guide Folder
+│   ├── README.md                  <-- Master Problems Index
+│   ├── 01_FINANCIAL_ROUNDING_PAISA_PRECISION.md
+│   ├── 02_MONTHLY_RETAINER_SPLIT_LARGEST_REMAINDER.md
+│   ├── 03_CONTRACT_VERSIONING_OVERLAP_PREVENTION.md
+│   ├── 04_IDEMPOTENCY_DUPLICATE_INVOICE_PREVENTION.md
+│   ├── 05_AUTOMATED_FRAUD_ANOMALY_DETECTION.md
+│   ├── 06_REDIS_CACHE_HIGH_AVAILABILITY.md
+│   └── 07_LOG_TRACEABILITY_CORRELATION_ID.md
+│
 ├── docs/                          <-- Comprehensive Enterprise Documentation Suite
 │   ├── PROJECT_OVERVIEW.md
+│   ├── PROJECT_PRESENTATION.md
 │   ├── ARCHITECTURE.md
 │   ├── DATABASE.md
 │   ├── BUSINESS_LOGIC.md
