@@ -7,7 +7,6 @@ import { Layers, Eye, EyeOff, ShieldCheck, ArrowRight } from 'lucide-react';
 export const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -203,4 +202,4 @@ export const Register = () => {
       </div>
     </div>
   );
-};
+};                                   

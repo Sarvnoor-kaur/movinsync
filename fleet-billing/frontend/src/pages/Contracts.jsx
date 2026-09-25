@@ -109,7 +109,7 @@ export const Contracts = () => {
       const vRes = await contractApi.getVersions(contract.id);
       setVersions(vRes.data || []);
       if (vRes.data && vRes.data.length > 0) {
-        const sRes = await contractApi.getPricingSlabs(vRes.data[0].id);
+        const sRes = await contractApi.getPricingSlabs(contract.id, vRes.data[0].id);
         setSlabs(sRes.data || []);
       } else {
         setSlabs([]);
@@ -166,7 +166,7 @@ export const Contracts = () => {
     setError('');
     setSuccess('');
     try {
-      await contractApi.createPricingSlab(targetVersionId, slabForm);
+      await contractApi.createPricingSlab(selectedContract.id, targetVersionId, slabForm);
       setSuccess('Pricing Slab created successfully.');
       setIsSlabModalOpen(false);
       handleInspectContract(selectedContract);
